@@ -1,6 +1,6 @@
 # docker-factorio
 
-A small, simple containerized Factorio server that supports interactive and non-interactive server commands. Suitable for local and hosted servers. Simple, low-configuration and highly customizable. 
+A small, simple containerized Factorio server. Suitable for local and hosted servers. Simple, low-configuration and highly customizable. Forked from sover02/docker-factorio to support custom server-settings files and SIGINT/SIGTERM from native docker commands.
 
 ## Building the image
 ```bash
@@ -24,11 +24,7 @@ docker run --name docker-factorio -itdp 34197:34197/udp --platform linux/amd64 6
 
 Interactive:
 ```bash
-david@focus docker-factorio % # Hop into the container
-david@focus docker-factorio % docker exec -it docker-factorio bash
-root@docker-factorio:/app
-root@docker-factorio:/app # Start Interactive Script
-root@docker-factorio:/app ./interact.sh
+david@focus docker-factorio % docker attach docker-factorio
  250.157 Info ServerMultiplayerManager.cpp:943: updateTick(15117) received stateChanged peerID(1) oldState(ConnectedDownloadingMap) newState(ConnectedLoadingMap)
  250.341 Info ServerMultiplayerManager.cpp:943: updateTick(15127) received stateChanged peerID(1) oldState(ConnectedLoadingMap) newState(TryingToCatchUp)
  250.342 Info ServerMultiplayerManager.cpp:943: updateTick(15127) received stateChanged peerID(1) oldState(TryingToCatchUp) newState(WaitingForCommandToStartSendingTickClosures)
@@ -41,47 +37,14 @@ sup
 /kick david lol
 ```
 
-Non-Interactive (for scripts or one-offs):
-```bash
-david@focus docker-factorio % # Hop into the container
-david@focus docker-factorio % docker exec -it docker-factorio bash
-root@docker-factorio:/app # Send commands to the server
-root@docker-factorio:/app ./run-command.sh "sup"
-2022-04-09 17:03:11 [CHAT] <server>: sup
-root@docker-factorio:/app ./run-command.sh "/kick david lol"
-2022-04-09 17:03:24 [KICK] david was kicked by <server>. Reason: lol. 1352.490 Info ServerMultiplayerManager.cpp:1061: Disconnect notification for peer (1)
-```
-
-Or, if you don't need to see the command output:
-```bash
-david@focus docker-factorio % # Hop into the container
-david@focus docker-factorio % docker exec -it docker-factorio bash
-root@docker-factorio:/app # Send commands to the server
-root@docker-factorio:/app echo "sup" > ./factorio-server-fifo
-root@docker-factorio:/app echo "/kick david lol" > ./factorio-server-fifo
-```
 
 ## Starting, Stopping, Restarting the Server
 
-The image comes with a few scripts to help managing server execution.
+Starting and stopping can be done with docker commands
 
 ```bash
-root@docker-factorio:/app # Hop into the container
-david@focus docker-factorio % docker exec -it docker-factorio bash
-root@docker-factorio:/app # Stop the factorio server
-root@docker-factorio:/app ./stop-server.sh 
-Stopping Factorio Server...
-Done!
-root@docker-factorio:/app # The server starts on it's own, but you can start it again after stopping it.
-root@docker-factorio:/app ./start-server.sh 
-Starting Factorio Server...
-Done!
-root@docker-factorio:/app # Cycle the server.  Useful after config changes.
-root@docker-factorio:/app ./restart-server.sh 
-Stopping Factorio Server...
-Done!
-Starting Factorio Server...
-Done!
+david@focus docker-factorio % docker stop docker-factorio
+david@focus docker-factorio % docker start docker-factorio
 ```
 
 
@@ -110,18 +73,25 @@ david@focus docker-factorio % # We're ready to go
 
 ## Custom Settings
 
-Settings can be managed the same way that saved games are. Mount files in the default locations to populate the server configs. 
+Specifying custom server settings is optional. If specified, they managed the same way that saved games are.  This is the same example as above with the addition of a custom server-settings file.
+```bash
+david@focus docker-factorio % cp my-cool-saved-game.zip ~/factorio-stuffs/saved-games/ 
+david@focus docker-factorio % echo "my-cool-saved-game.zip" > ~/factorio-stuffs/last-game.txt 
+david@focus docker-factorio % # Start the container detached, with ports mounted, and the two binds mentioned above
+david@focus docker-factorio % docker run --name docker-factorio -it \
+> -d
+> -p 34197:34197/udp \
+> --mount type=bind,source=~/factorio-stuffs/saved-games,target=/app/factorio/saves \
+> --mount type=bind,source=~/factorio-stuffs/last-game.txt,target=/app/factorio/last-game.txt \
+> --mount type=bind,source=~/factorio-stuffs/server-settings.json,target=/app/factorio/server-settings.json \
+> docker-factorio
+abdac7023091
+david@focus docker-factorio % # We're ready to go
+```
 
 ## To-Do
-- Commands to start, stop, and restart the server
-- Load and backup savefiles from s3?
-- Small REST API to control the server
-- RCON support?
-- Create settings examples
-- Kubernetes boilerplate configs
-- Github action to build and push automatically with new factorio updates
 
 ## Links
 
-- Repository: https://github.com/sover02/docker-factorio
-- Dockerhub: https://hub.docker.com/repository/docker/6davids/docker-factorio
+- Repository: https://github.com/cmbuck/docker-factorio
+- Forked from: https://github.com/sover02/docker-factorio
